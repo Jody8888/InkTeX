@@ -26,6 +26,7 @@ const PARAMS = [
 const DEFAULTS = Object.fromEntries(PARAMS.map(p => [p[0], p[5]]));
 const SAMPLE = '解：由牛顿第二定律 $F=ma$ 得 $a=\\frac{F}{m}=5\\,\\mathrm{m/s^2}$。\n$$\\int_0^1 x^2\\,dx=\\frac{1}{3}$$\n等效电阻 $R=R_1+\\frac{R_2R_3}{R_2+R_3}=10\\,\\Omega$。';
 const PAD = 0.5;   // 图片四周留白（em）
+const MJ_GAP = 0.05;   // MathJax 里相邻字母墨迹间距的典型值
 const LATIN = /[A-Za-z0-9'’-]/;                  // 连续的这些字符算一个词，不在中间断行
 const CLOSE = /[，。、；：？！）》」』”,.;:?!)\]】]/;  // 不放在行首的标点
 const WIDE = /[\u3000-\u303f\uff00-\uffef]/;      // 全角标点，至少占半个字宽
@@ -183,25 +184,57 @@ function fallback(ctx, it, ox, oy, off) {
   ctx.restore();
 }
 
-function drawFormula(ctx, fm, ox, oy, off) {
+// 给公式里每个符号选好字形，再按手写字宽重排横向位置（竖直不动）。
+// x 轴分段线性映射：有符号的区间按「手写宽 / 印刷宽」缩放（叠放的取最大），空白区间加上字距差，
+// 这样公式内字距和正文一致。横线和横向拉伸的重音不参与，跟着映射伸缩。
+function handFormula(fm) {
   const f = P.mathJ;
-  for (const it of fm.items) {
-    if (it.t === 'bar') { handLine(ctx, it.b, ox, oy, off, f); continue; }
+  const items = fm.items.map(it => {
+    const h = { it, k: it.t === 'bar' || it.t === 'stretch' && it.b[2] - it.b[0] > it.b[3] - it.b[1] ? 0 : 1 };
+    if (it.t === 'bar') return h;
     const key = it.t === 'stretch' && lib['T:' + it.key] ? 'T:' + it.key : it.key;
     if (!lib[key]) {
       if (it.key.trim()) missing.add(it.key);
-      fallback(ctx, it, ox, oy, off);
-      continue;
+      return h;
     }
     const strokes = pick(key), b = bbox(strokes), J = jitter(f);
-    const cx = ox + (it.b[0] + it.b[2]) / 2 + J.dx;
+    if (h.k && it.t === 'glyph') h.k = b.w * it.em * J.s / (it.b[2] - it.b[0]);
+    return Object.assign(h, { strokes, b, J });
+  });
+  const cov = items.filter(h => h.k !== 0);
+  const xs = [...new Set(cov.flatMap(h => [h.it.b[0], h.it.b[2]]))].sort((a, b) => a - b), X = [0];
+  for (let i = 1; i < xs.length; i++) {
+    const a = xs[i - 1], c = xs[i];
+    const ks = cov.filter(h => h.it.b[0] <= a && h.it.b[2] >= c).map(h => h.k);
+    X.push(X[i - 1] + (ks.length ? (c - a) * Math.max(...ks) : Math.max(0, c - a + P.spacing - MJ_GAP)));
+  }
+  const map = x => {
+    const i = xs.findIndex(v => v >= x);
+    if (i < 0) return X.at(-1) + x - xs.at(-1);
+    if (i === 0) return x - xs[0];
+    return X[i - 1] + (X[i] - X[i - 1]) * (x - xs[i - 1]) / (xs[i] - xs[i - 1]);
+  };
+  for (const h of items) { h.x0 = map(h.it.b[0]); h.x1 = map(h.it.b[2]); }
+  const x0 = Math.min(...items.map(h => h.x0)), x1 = Math.max(...items.map(h => h.x1));
+  return { items, x0, w: x1 - x0, asc: fm.asc, desc: fm.desc };
+}
+
+// ox 是公式最左墨迹的位置
+function drawFormula(ctx, hf, ox, oy, off) {
+  const f = P.mathJ;
+  ox -= hf.x0;
+  for (const h of hf.items) {
+    const { it } = h, cx = (h.x0 + h.x1) / 2;
+    if (it.t === 'bar') { handLine(ctx, [h.x0, it.b[1], h.x1, it.b[3]], ox, oy, off, f); continue; }
+    if (!h.strokes) { fallback(ctx, it, ox + cx - (it.b[0] + it.b[2]) / 2, oy, off); continue; }
+    const { strokes, b, J } = h, x = ox + cx + J.dx;
     if (it.t === 'glyph') {
       const s = it.em * J.s;
-      drawHand(ctx, strokes, b, cx, oy + off(cx) + it.base + b.cy * s + J.dy, s, s, J, f);
+      drawHand(ctx, strokes, b, x, oy + off(x) + it.base + b.cy * s + J.dy, s, s, J, f);
     } else {
-      // 拉伸的符号：把字形框适配到 MathJax 给的框（笔粗不变，所以非等比缩放也不变形）
-      const sy = (it.b[3] - it.b[1]) / b.h, sx = b.w ? (it.b[2] - it.b[0]) / b.w : sy;
-      drawHand(ctx, strokes, b, cx, oy + off(cx) + (it.b[1] + it.b[3]) / 2 + J.dy, sx, sy, J, f);
+      // 拉伸的符号：把字形框适配到映射后的框（笔粗不变，所以非等比缩放也不变形）
+      const sy = (it.b[3] - it.b[1]) / b.h, sx = b.w ? (h.x1 - h.x0) / b.w : sy;
+      drawHand(ctx, strokes, b, x, oy + off(x) + (it.b[1] + it.b[3]) / 2 + J.dy, sx, sy, J, f);
     }
   }
 }
@@ -244,8 +277,11 @@ async function buildUnits(tokens) {
       flush();
       const fm = await formula(tk.tex, tk.display);
       if (fm.err) errors.push(`${fm.err}：${tk.tex}`);
-      else if (tk.display) units.push({ block: fm });
-      else units.push({ w: fm.w + 0.2, parts: [{ fm, w: fm.w + 0.2, asc: fm.asc, desc: fm.desc }] });
+      else if (tk.display) units.push({ block: handFormula(fm) });
+      else {
+        const hf = handFormula(fm), w = hf.w + P.spacing + gauss(P.spaceJ);
+        units.push({ w, parts: [{ hf, w, asc: hf.asc, desc: hf.desc }] });
+      }
       continue;
     }
     if (/\s/.test(tk.ch)) { flush(); units.push({ sp: 0.33 + gauss(P.spaceJ) }); continue; }
@@ -328,7 +364,7 @@ async function render() {
     for (const { u, x } of ln.items) {
       let xx = x0 + x;
       for (const g of u.parts) {
-        if (g.fm) drawFormula(ctx, g.fm, xx + 0.1, ln.base, off);
+        if (g.hf) drawFormula(ctx, g.hf, xx, ln.base, off);
         else if (g.fb) fallback(ctx, { key: g.fb, b: [0], em: 1, base: 0 }, xx, ln.base, off);
         else {
           const cx = xx + g.b.w * g.J.s / 2 + g.J.dx;
