@@ -241,13 +241,16 @@ function drawFormula(ctx, hf, ox, oy, off) {
 
 // ---------- 排版 ----------
 
+// 公式：$$…$$、\[…\]、$…$、\(…\)，以及没包分隔符的 \begin{aligned} 等环境（当行间公式）
 function tokenize(src) {
-  const out = [], re = /\$\$([\s\S]+?)\$\$|\\\[([\s\S]+?)\\\]|\$([^$]+?)\$|\\\(([\s\S]+?)\\\)/g;
+  const out = [], re = /\$\$([\s\S]+?)\$\$|\\\[([\s\S]+?)\\\]|\$([^$]+?)\$|\\\(([\s\S]+?)\\\)|(\\begin\{(?!(?:enumerate|itemize|description|center)\})(\w+\*?)\}[\s\S]+?\\end\{\6\})/g;
   let last = 0, m;
   const text = s => { for (const ch of plain(s)) out.push(ch === '\n' ? { nl: true } : { ch }); };
   while ((m = re.exec(src))) {
     text(src.slice(last, m.index));
-    out.push({ tex: (m[1] ?? m[2] ?? m[3] ?? m[4]).trim(), display: m[1] !== undefined || m[2] !== undefined });
+    // 从网页复制时 \\ 常变成单个 \，行尾单个 \ 按换行处理
+    const tex = (m[1] ?? m[2] ?? m[3] ?? m[4] ?? m[5]).replace(/(^|[^\\])\\\n/g, '$1\\\\\n').trim();
+    out.push({ tex, display: m[3] === undefined && m[4] === undefined });
     last = re.lastIndex;
   }
   text(src.slice(last));
