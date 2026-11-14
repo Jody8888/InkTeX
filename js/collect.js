@@ -69,6 +69,8 @@ function buildCells() {
       cur = null;
     };
     cv.onpointercancel = () => cur = null;
+    // 不让 iPadOS 的 Scribble 和长按手势截走 Pencil 的小幅移动（被截走时只剩起点）
+    for (const t of ['touchstart', 'touchmove']) cv.addEventListener(t, e => e.preventDefault(), { passive: false });
     redraw(c);
     return c;
   });
