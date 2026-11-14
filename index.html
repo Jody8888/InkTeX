@@ -13,7 +13,7 @@
 <script>
   MathJax = {
     loader: { load: ['[tex]/mhchem', '[tex]/physics'] },
-    tex: { packages: { '[+]': ['mhchem', 'physics'] } },
+    tex: { packages: { '[+]': ['mhchem', 'physics'] }, macros: { boxed: ['{#1}', 1] } },   // 手写答案不画框
     svg: { fontCache: 'none' },   // 每个字形直接输出成带码位的 path，方便逐个替换
     startup: { typeset: false },
   };

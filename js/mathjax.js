@@ -103,14 +103,7 @@ function extract(tex, display) {
       : { t: 'glyph', key, b, base: m.f / 1000, em, fallback: [fb(p)] });
   }
 
-  // 实心矩形是分数线、根号横线等；\boxed 的框是描边矩形，拆成四条边
-  for (const r of svg.querySelectorAll('rect')) {
-    const b = box(M(r), r.getBBox());
-    const sides = r.getAttribute('fill') === 'none'
-      ? [[b[0], b[1], b[2], b[1]], [b[2], b[1], b[2], b[3]], [b[0], b[3], b[2], b[3]], [b[0], b[1], b[0], b[3]]]
-      : [b];
-    for (const s of sides) items.push({ t: 'bar', b: s });
-  }
+  for (const r of svg.querySelectorAll('rect')) items.push({ t: 'bar', b: box(M(r), r.getBBox()) });
 
   // \text{} 里 MathJax 字体没有的字（中文等）是 <text>，一个元素里可能有多个字，按宽度均分
   for (const t of svg.querySelectorAll('text')) {
