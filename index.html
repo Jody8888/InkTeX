@@ -10,18 +10,44 @@
 <link rel="apple-touch-icon" href="icon.png">
 <link rel="stylesheet" href="style.css">
 <title>InkTeX</title>
+<script>
+  MathJax = {
+    loader: { load: ['[tex]/mhchem', '[tex]/physics'] },
+    tex: { packages: { '[+]': ['mhchem', 'physics'] } },
+    svg: { fontCache: 'none' },   // 每个字形直接输出成带码位的 path，方便逐个替换
+    startup: { typeset: false },
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js" defer></script>
 </head>
 <body>
 <header>
   <h1>InkTeX</h1>
   <nav>
-    <button data-tab="collect" class="on">采字</button>
+    <button data-tab="generate" class="on">生成</button>
+    <button data-tab="collect">采字</button>
     <button data-tab="library">字形库</button>
   </nav>
 </header>
 
 <main>
-  <section id="collect">
+  <section id="generate">
+    <textarea id="src" rows="7" spellcheck="false" autocapitalize="off" autocorrect="off" placeholder="正文直接写，公式用 $...$（行内）或 $$...$$（单独一行）"></textarea>
+    <div class="row">
+      <button id="reseed">换一种写法</button>
+      <button id="copy" class="primary">复制图片</button>
+      <button id="share">保存 / 分享</button>
+    </div>
+    <div id="status" class="hint"></div>
+    <div id="preview"></div>
+    <details>
+      <summary>参数</summary>
+      <div id="params"></div>
+      <button id="resetParams">恢复默认</button>
+    </details>
+  </section>
+
+  <section id="collect" hidden>
     <div id="groups" class="chips"></div>
     <div class="row">
       <input id="customChars" placeholder="自定义字符，如 ⊥ℓ∮">

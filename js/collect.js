@@ -7,7 +7,7 @@ const THUMB = 40;
 const GUIDES = [[-0.7, []], [-0.45, [6, 6]], [0, []], [0.25, [6, 6]]];   // 大写高度、小写高度、基线、下伸线
 
 const $ = id => document.getElementById(id);
-let group = GROUPS[0], idx = 0, custom = null, cells = [], history = [], EM;
+let group = GROUPS[0], idx, custom = null, cells = [], history = [], EM;
 
 const span = () => CELL[group.tall ? 'tall' : 'normal'];
 const key = () => keyOf(group.chars[idx], group.tall);
@@ -120,10 +120,12 @@ function go(i) {
 // 打开分组；不指定位置时跳到第一个还没采的字
 export function openGroup(g, i) {
   group = g;
+  if (!GROUPS.includes(g)) custom = g;
   go(i ?? Math.max(0, g.chars.findIndex(ch => !lib[keyOf(ch, g.tall)])));
 }
 
-export const refresh = () => go(idx);
+// 切到采字页时调用（页面隐藏时量不出格子宽度，所以不在加载时建格子）
+export const refresh = () => openGroup(group, idx);
 
 $('prev').onclick = () => go(idx - 1);
 $('next').onclick = () => go(idx + 1);
@@ -148,8 +150,5 @@ $('save').onclick = () => {
 $('customGo').onclick = () => {
   const chars = Array.from($('customChars').value.replace(/\s/g, ''));
   if (!chars.length) return;
-  custom = { name: '自定义', chars };
-  openGroup(custom, 0);
+  openGroup({ name: '自定义', chars }, 0);
 };
-
-openGroup(GROUPS[0]);

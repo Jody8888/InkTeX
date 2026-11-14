@@ -77,3 +77,28 @@ input {
 .tile.missing { color: var(--muted); font: 26px "Times New Roman", serif; }
 .tile span { position: absolute; right: 4px; bottom: 2px; font-size: 11px; color: var(--muted); }
 #stats { flex: 1; color: var(--muted); }
+textarea {
+  width: 100%;
+  font: 15px/1.5 ui-monospace, Menlo, monospace;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+  -webkit-user-select: text;
+  user-select: text;
+}
+#status button { min-height: 32px; margin-left: 6px; font-size: 13px; }
+#preview canvas {
+  display: block;
+  max-width: 100%;
+  margin: 8px 0;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+details { margin-top: 16px; }
+summary { color: var(--muted); padding: 8px 0; }
+#params { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 4px 16px; margin-bottom: 10px; }
+#params label { display: grid; grid-template-columns: 8em 1fr 3em; align-items: center; gap: 8px; font-size: 14px; }
+#params input { min-width: 0; }
+#params span { color: var(--muted); text-align: right; }
