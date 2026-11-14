@@ -54,14 +54,21 @@ function buildCells() {
       history.push(c);
       redraw(c);
     };
-    cv.onpointermove = e => {
-      if (!cur) return;
+    const add = (e, up) => {
       const p = point(e);
+      if (up) p[2] = cur.at(-1);   // 抬笔事件的压力是 0，沿用上一点的压力
       if (Math.hypot(p[0] - cur.at(-3), p[1] - cur.at(-2)) < 0.006) return;
       cur.push(...p);
       redraw(c);
     };
-    cv.onpointerup = cv.onpointercancel = () => cur = null;
+    cv.onpointermove = e => cur && add(e);
+    // 快速短笔画时 Safari 可能一个 move 都不发，抬笔位置也要记进去
+    cv.onpointerup = e => {
+      if (!cur) return;
+      add(e, true);
+      cur = null;
+    };
+    cv.onpointercancel = () => cur = null;
     redraw(c);
     return c;
   });
