@@ -29,6 +29,19 @@ const PAD = 0.5;   // 图片四周留白（em）
 const LATIN = /[A-Za-z0-9'’-]/;                  // 连续的这些字符算一个词，不在中间断行
 const CLOSE = /[，。、；：？！）》」』”,.;:?!)\]】]/;  // 不放在行首的标点
 const WIDE = /[\u3000-\u303f\uff00-\uffef]/;      // 全角标点，至少占半个字宽
+// 字形库没有的中文标点，换成对应的英文标点
+const PUNCT = { '，': ',', '。': '.', '：': ':', '；': ';', '（': '(', '）': ')', '、': ',', '？': '?', '！': '!' };
+
+// 公式外的 LaTeX 文档命令（AI 常输出）转成纯文本：去掉格式命令，列表项和 \\ 变换行
+function plain(s) {
+  return s
+    .replace(/\\(?:begin|end)\{(?:enumerate|itemize|description|center)\}(?:\[[^\]]*\])?/g, '')
+    .replace(/\\item\b\s*/g, '\n')
+    .replace(/\\(?:textbf|textit|textrm|text|emph|underline|mathrm)\{([^{}]*)\}/g, '$1')
+    .replace(/\\\\(?:\[[^\]]*\])?|\\(?:newline|par)\b/g, '\n')
+    .replace(/\\(?:qquad|quad|noindent|[,;: ])/g, ' ')
+    .replace(/[ \t]*\n\s*/g, '\n');   // 去掉空行和行首空白，手写越紧凑越好
+}
 
 let P = { ...DEFAULTS, seed: 1, ...JSON.parse(localStorage.getItem('inktex-params') || '{}') };
 let rand, drift, missing, errors, blob, renderId = 0, onCollect;
@@ -198,7 +211,7 @@ function drawFormula(ctx, fm, ox, oy, off) {
 function tokenize(src) {
   const out = [], re = /\$\$([\s\S]+?)\$\$|\\\[([\s\S]+?)\\\]|\$([^$]+?)\$|\\\(([\s\S]+?)\\\)/g;
   let last = 0, m;
-  const text = s => { for (const ch of s) out.push(ch === '\n' ? { nl: true } : { ch }); };
+  const text = s => { for (const ch of plain(s)) out.push(ch === '\n' ? { nl: true } : { ch }); };
   while ((m = re.exec(src))) {
     text(src.slice(last, m.index));
     out.push({ tex: (m[1] ?? m[2] ?? m[3] ?? m[4]).trim(), display: m[1] !== undefined || m[2] !== undefined });
@@ -209,6 +222,7 @@ function tokenize(src) {
 }
 
 function textGlyph(ch) {
+  if (!lib[ch] && lib[PUNCT[ch]]) ch = PUNCT[ch];
   if (!lib[ch]) {
     missing.add(ch);
     measure.font = '100px serif';
