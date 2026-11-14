@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="InkTeX">
+<meta name="theme-color" content="#f6f4ee">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="stylesheet" href="style.css">
+<title>InkTeX</title>
+</head>
+<body>
+<header>
+  <h1>InkTeX</h1>
+  <nav>
+    <button data-tab="collect" class="on">采字</button>
+    <button data-tab="library">字形库</button>
+  </nav>
+</header>
+
+<main>
+  <section id="collect">
+    <div id="groups" class="chips"></div>
+    <div class="row">
+      <input id="customChars" placeholder="自定义字符，如 ⊥ℓ∮">
+      <button id="customGo">采集</button>
+    </div>
+    <div class="target">
+      <button id="prev">‹</button>
+      <div id="ref"></div>
+      <div id="pos"></div>
+      <button id="next">›</button>
+    </div>
+    <div id="cells"></div>
+    <div class="row">
+      <button id="undo">撤销</button>
+      <button id="clear">清空</button>
+      <button id="save" class="primary">保存并下一个</button>
+    </div>
+    <p class="hint">每格写一种写法，只认 Apple Pencil，手指碰到不会落笔。蓝色实线是基线，虚线是小写字母高度。</p>
+    <h3>已保存的写法</h3>
+    <div id="saved" class="thumbs"></div>
+  </section>
+
+  <section id="library" hidden>
+    <div class="row">
+      <span id="stats"></span>
+      <button id="export">导出备份</button>
+      <label class="btn">导入备份<input type="file" id="import" accept=".json" hidden></label>
+    </div>
+    <div id="libGroups"></div>
+  </section>
+</main>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

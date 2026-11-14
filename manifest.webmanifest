@@ -1,0 +1,9 @@
+{
+  "name": "InkTeX",
+  "short_name": "InkTeX",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#f6f4ee",
+  "theme_color": "#f6f4ee",
+  "icons": [{ "src": "icon.png", "sizes": "180x180", "type": "image/png" }]
+}
