@@ -144,14 +144,14 @@ function drawHand(ctx, strokes, b, tx, ty, sx, sy, J, f) {
   }
 }
 
-// 手画直线（分数线、根号横线等）：两端长短随机，中间略弯
+// 手画直线（分数线、根号横线等）：两端长短随机（左端只伸不缩，好接上根号），中间略弯
 function handLine(ctx, b, ox, oy, off, f) {
   const hz = b[2] - b[0] >= b[3] - b[1];
   const [x1, y1, x2, y2] = hz
     ? [b[0], (b[1] + b[3]) / 2, b[2], (b[1] + b[3]) / 2]
     : [(b[0] + b[2]) / 2, b[1], (b[0] + b[2]) / 2, b[3]];
   const len = Math.hypot(x2 - x1, y2 - y1), ux = (x2 - x1) / len, uy = (y2 - y1) / len;
-  const e1 = gauss(0.03 * f), e2 = gauss(0.03 * f), n1 = gauss(0.015 * f), n2 = gauss(0.015 * f);
+  const e1 = Math.abs(gauss(0.03 * f)), e2 = gauss(0.03 * f), n1 = gauss(0.015 * f), n2 = gauss(0.015 * f);
   const bow = gauss(0.01 + 0.015 * len * f);
   const ax = ox + x1 - ux * e1 - uy * n1, ay = oy + y1 - uy * e1 + ux * n1;
   const bx = ox + x2 + ux * e2 - uy * n2, by = oy + y2 + uy * e2 + ux * n2;
@@ -193,7 +193,7 @@ function handFormula(fm) {
   const items = fm.items.map(it => {
     const h = { it, k: it.t === 'bar' || it.t === 'stretch' && it.b[2] - it.b[0] > it.b[3] - it.b[1] ? 0 : 1 };
     if (it.t === 'bar') return h;
-    const key = it.t === 'stretch' && lib['T:' + it.key] ? 'T:' + it.key : it.key;
+    const key = it.t === 'stretch' && it.b[3] - it.b[1] > 1.2 && lib['T:' + it.key] ? 'T:' + it.key : it.key;
     if (!lib[key]) {
       if (it.key.trim()) missing.add(it.key);
       return h;

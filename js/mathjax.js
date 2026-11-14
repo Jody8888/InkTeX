@@ -4,7 +4,8 @@
 
 const GREEK_EXTRA = ['∂', 'ϵ', 'ϑ', 'ϰ', 'ϕ', 'ϱ', 'ϖ'];
 const ALIAS = { 0x22C5: '·', 0x2223: '|', 0x2225: '‖', 0x2016: '‖', 0x2218: '°', 0x2217: '*', 0x20D7: '→', 0x2C6: '^', 0x2DC: '~' };
-const ACCENTS = new Set([0x20D7, 0x5E, 0x2C6, 0x7E, 0x2DC]);   // 按框适配大小的重音（\vec 箭头、\hat、\tilde）
+// 按框适配大小的符号：重音（\vec 箭头、\hat、\tilde）和根号（手写 √ 的右上角要接上 MathJax 的横线）
+const FIT = new Set([0x20D7, 0x5E, 0x2C6, 0x7E, 0x2DC, 0x221A]);
 // 可伸缩括号的拼接部件 → 对应字符
 const PIECES = [
   [0x239B, 0x239D, '('], [0x239E, 0x23A0, ')'], [0x23A1, 0x23A3, '['], [0x23A4, 0x23A6, ']'],
@@ -98,7 +99,7 @@ function extract(tex, display) {
     const em = Math.sqrt(Math.abs(m.a * m.d - m.b * m.c));
     const b = box(m, p.getBBox());
     const key = charOf(cpOf(p));
-    items.push(b[3] - b[1] > 1.2 * em || ACCENTS.has(cpOf(p))
+    items.push(b[3] - b[1] > 1.2 * em || FIT.has(cpOf(p))
       ? stretch(key, b, [fb(p)])
       : { t: 'glyph', key, b, base: m.f / 1000, em, fallback: [fb(p)] });
   }
