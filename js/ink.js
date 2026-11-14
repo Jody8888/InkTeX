@@ -1,34 +1,29 @@
+import { getStroke } from './vendor/perfect-freehand.mjs';
+
 export const INK = '#1b2a5e';
 export const PEN = 0.055;   // 笔粗占 em 的比例
 
-const pw = p => 0.55 + 0.9 * p;   // 笔压 → 笔粗系数
-
-// 一笔：相邻点中点之间用二次曲线连接，每段按该点笔压设线宽。k 为每 em 像素数，(ox, oy) 为原点位置。
+// 一笔：按笔压算出整笔的轮廓多边形，再一次填充（逐段描线在慢速书写时会叠出一颗颗圆头）。
+// k 为每 em 像素数，(ox, oy) 为原点位置，w 为笔压 0.5 时的笔粗。
 export function drawStroke(ctx, s, k, ox, oy, w) {
-  const m = s.length / 3;
-  const P = j => [ox + s[3 * j] * k, oy + s[3 * j + 1] * k];
-  ctx.lineCap = ctx.lineJoin = 'round';
-  let [ax, ay] = P(0);
-  if (m === 1) {
-    ctx.beginPath();
-    ctx.arc(ax, ay, w * pw(s[2]) / 2, 0, 7);
-    ctx.fill();
-    return;
+  const pts = [];
+  let p = s[2];
+  for (let i = 0; i < s.length; i += 3) {
+    p += (s[i + 2] - p) * 0.4;   // 轻微平滑笔压抖动
+    pts.push([ox + s[i] * k, oy + s[i + 1] * k, p]);
   }
-  for (let j = 1; j < m; j++) {
-    const [cx, cy] = P(j);
-    const [ex, ey] = j === m - 1 ? [cx, cy] : P(j + 1).map((v, i) => (v + [cx, cy][i]) / 2);
-    ctx.lineWidth = w * pw(s[3 * j + 2]);
-    ctx.beginPath();
-    ctx.moveTo(ax, ay);
-    ctx.quadraticCurveTo(cx, cy, ex, ey);
-    ctx.stroke();
-    [ax, ay] = [ex, ey];
-  }
+  const o = getStroke(pts, { size: w, thinning: 0.5, smoothing: 0.5, streamline: 0, simulatePressure: false, last: true });
+  ctx.beginPath();
+  ctx.moveTo(...o[0]);
+  o.forEach(([x0, y0], i) => {
+    const [x1, y1] = o[(i + 1) % o.length];
+    ctx.quadraticCurveTo(x0, y0, (x0 + x1) / 2, (y0 + y1) / 2);
+  });
+  ctx.fill();
 }
 
 export function drawGlyph(ctx, strokes, k, ox, oy, w) {
-  ctx.strokeStyle = ctx.fillStyle = INK;
+  ctx.fillStyle = INK;
   for (const s of strokes) drawStroke(ctx, s, k, ox, oy, w);
 }
 
