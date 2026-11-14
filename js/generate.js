@@ -1,6 +1,7 @@
 import { lib } from './db.js';
 import { drawStroke, INK, PEN } from './ink.js';
 import { formula } from './mathjax.js';
+import { GROUPS } from './charset.js';
 
 const $ = id => document.getElementById(id);
 
@@ -399,6 +400,25 @@ function showStatus() {
 
 // ---------- 界面 ----------
 
+// 给 AI 的提示词，让它直接输出本工具能用的 LaTeX。汉字限定为「常用汉字」组和字形库里已采集的汉字。
+function prompt() {
+  const han = [...new Set([...GROUPS.find(g => g.name === '常用汉字').chars, ...Object.keys(lib)])].filter(c => /\p{Script=Han}/u.test(c));
+  return String.raw`请给出这道题的解答, 要求能拿满分, 但尽量简短, 抄写越少越好: 必要步骤完整, 省略一切可以省略的文字和中间计算.
+
+汉字只能用以下这些: ${han.join(',')}
+能用符号就不用汉字, 结论用 \therefore, 原因用 \because.
+
+输出规则:
+- 整个答案放在一个 ${'```'}latex 代码块里输出, 代码块外不要写任何内容.
+- 只写纯文本加公式, 不要 \documentclass, \section, \textbf, enumerate, itemize, \item, 表格, \label, \tag 等任何文档结构命令.
+- 所有数学内容放在 $...$ 或 $$...$$ 内, 多行推导用 $$\begin{aligned}...\end{aligned}$$, 行与行之间用 \\ 分隔.
+- 公式外换行直接用回车, 不要在公式外用 \\.
+- 每行公式尽量不超过 40 个字符, 长的推导拆成 aligned 多行.
+- 小题编号直接写 (1)(2).
+- 不用任何中文标点 (，。：；（）), 需要时用英文 , . : ( ).`;
+}
+
+
 let timer;
 function schedule() {
   clearTimeout(timer);
@@ -440,9 +460,13 @@ $('resetParams').onclick = () => {
   buildParams();
   render();
 };
-$('copy').onclick = () => navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
-  .then(() => $('copy').textContent = '已复制 ✓', () => $('copy').textContent = '复制失败')
-  .then(() => setTimeout(() => $('copy').textContent = '复制图片', 1500));
+const flash = (btn, p) => {
+  const label = btn.textContent;
+  p.then(() => btn.textContent = '已复制 ✓', () => btn.textContent = '复制失败')
+    .then(() => setTimeout(() => btn.textContent = label, 1500));
+};
+$('copy').onclick = () => flash($('copy'), navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]));
+$('prompt').onclick = () => flash($('prompt'), navigator.clipboard.writeText(prompt()));
 $('share').onclick = () => {
   const file = new File([blob], 'inktex.png', { type: 'image/png' });
   if (navigator.canShare?.({ files: [file] })) return navigator.share({ files: [file] });
