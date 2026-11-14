@@ -101,4 +101,5 @@ summary { color: var(--muted); padding: 8px 0; }
 #params { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 4px 16px; margin-bottom: 10px; }
 #params label { display: grid; grid-template-columns: 8em 1fr 3em; align-items: center; gap: 8px; font-size: 14px; }
 #params input { min-width: 0; }
+#params input[type=color] { padding: 2px; }
 #params span { color: var(--muted); text-align: right; }

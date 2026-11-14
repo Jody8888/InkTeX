@@ -24,7 +24,7 @@ const PARAMS = [
   ['lineWave', '行波动', 0, 0.2, 0.005, 0.05],
   ['mathJ', '公式扰动系数', 0, 1.5, 0.05, 0.6],
 ];
-const DEFAULTS = Object.fromEntries(PARAMS.map(p => [p[0], p[5]]));
+const DEFAULTS = { ...Object.fromEntries(PARAMS.map(p => [p[0], p[5]])), color: INK };
 const SAMPLE = '解：由牛顿第二定律 $F=ma$ 得 $a=\\frac{F}{m}=5\\,\\mathrm{m/s^2}$。\n$$\\int_0^1 x^2\\,dx=\\frac{1}{3}$$\n等效电阻 $R=R_1+\\frac{R_2R_3}{R_2+R_3}=10\\,\\Omega$。';
 const PAD = 0.5;   // 图片四周留白（em）
 const MJ_GAP = 0.05;   // MathJax 里相邻字母墨迹间距的典型值
@@ -357,7 +357,7 @@ async function render() {
   cv.width = Math.ceil((w + 2 * PAD) * k);
   cv.height = Math.ceil((y - P.gap + PAD) * k);
   const ctx = cv.getContext('2d');
-  ctx.fillStyle = INK;
+  ctx.fillStyle = P.color;
 
   for (const ln of lines) {
     // 行级扰动：整行倾斜 + 基线缓慢起伏 + 行首位置
@@ -445,6 +445,15 @@ function buildParams() {
     l.append(label, r, v);
     return l;
   }));
+  const l = document.createElement('label');
+  const c = Object.assign(document.createElement('input'), { type: 'color', value: P.color });
+  c.oninput = () => {
+    P.color = c.value;
+    persist();
+    schedule();
+  };
+  l.append('笔迹颜色', c);
+  $('params').append(l);
 }
 
 $('src').value = localStorage.getItem('inktex-src') ?? SAMPLE;
