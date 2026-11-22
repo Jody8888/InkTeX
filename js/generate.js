@@ -469,11 +469,17 @@ $('resetParams').onclick = () => {
   buildParams();
   render();
 };
-const flash = (btn, p) => {
+const flash = (btn, p, verb = '复制') => {
   const label = btn.textContent;
-  p.then(() => btn.textContent = '已复制 ✓', () => btn.textContent = '复制失败')
+  p.then(() => btn.textContent = `已${verb} ✓`, () => btn.textContent = `${verb}失败`)
     .then(() => setTimeout(() => btn.textContent = label, 1500));
 };
+// 用剪贴板文本替换输入框；AI 回答整段包在 ```latex 代码块里时去掉围栏
+$('paste').onclick = () => flash($('paste'), navigator.clipboard.readText().then(t => {
+  $('src').value = t.trim().replace(/^```\w*\n([\s\S]*?)\n```$/, '$1');
+  persist();
+  render();
+}), '粘贴');
 $('copy').onclick = () => flash($('copy'), navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]));
 $('prompt').onclick = () => flash($('prompt'), navigator.clipboard.writeText(prompt()));
 $('share').onclick = () => {
